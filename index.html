@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bhai Bhai Store - Online Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;700&display=swap');
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Hind Siliguri', sans-serif; }
+        .sidebar { transition: 0.4s; transform: translateX(100%); }
+        .sidebar.active { transform: translateX(0); }
+        .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; }
+        .input-field { background: #334155; border: 1px solid #475569; color: white; padding: 10px; border-radius: 8px; width: 100%; margin-bottom: 12px; outline: none; }
+        .low-stock { background-color: #7f1d1d !important; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <header class="flex justify-between items-center p-5 bg-slate-900 shadow-2xl sticky top-0 z-50 border-b border-slate-800">
+        <h1 class="text-2xl font-bold text-blue-400">ভাই ভাই স্টোর <span class="text-xs bg-green-600 text-white px-2 py-1 rounded">ONLINE</span></h1>
+        <div class="flex items-center gap-4">
+            <div id="userDisplay" class="text-sm text-slate-400">Guest Mode</div>
+            <button onclick="toggleSidebar()" class="text-2xl"><i class="fas fa-bars"></i></button>
+        </div>
+    </header>
+
+    <div id="sidebar" class="sidebar fixed top-0 right-0 w-80 h-full bg-slate-900 z-[100] p-6 shadow-2xl border-l border-slate-800 overflow-y-auto">
+        <button onclick="toggleSidebar()" class="mb-8 text-slate-400"><i class="fas fa-arrow-right"></i> বন্ধ করুন</button>
+        
+        <div id="authSection">
+            <h3 class="text-lg font-bold mb-4 text-blue-400">অ্যাডমিন লগইন</h3>
+            <input type="email" id="loginEmail" placeholder="আপনার জিমেইল" class="input-field">
+            <button onclick="login()" class="w-full bg-blue-600 p-3 rounded-lg font-bold">লগইন</button>
+        </div>
+
+        <div id="adminControls" class="hidden">
+            <h3 class="text-lg font-bold mb-4 border-b border-slate-700 pb-2">নতুন পণ্য যোগ করুন</h3>
+            <input type="text" id="pName" placeholder="পণ্যের নাম" class="input-field">
+            <input type="number" id="pBuy" placeholder="কেনা দাম (কেজি)" class="input-field">
+            <input type="number" id="pSell" placeholder="বিক্রয় মূল্য (কেজি)" class="input-field">
+            <input type="number" id="pStock" placeholder="স্টক পরিমাণ (কেজি)" class="input-field">
+            <button onclick="addProduct()" class="w-full bg-green-600 p-3 rounded-lg font-bold mb-4">সেভ করুন</button>
+            <button onclick="logout()" class="w-full border border-red-500 text-red-500 p-2 rounded-lg">লগআউট</button>
+        </div>
+    </div>
+
+    <main class="p-4 max-w-6xl mx-auto space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="md:col-span-2">
+                <input type="text" id="search" onkeyup="searchProducts()" placeholder="পণ্য খুঁজুন..." class="input-field py-3 pl-4">
+            </div>
+            <div class="card flex items-center justify-between">
+                <span>আজকের লাভ:</span>
+                <span id="dailyProfit" class="text-xl font-bold text-green-400">০ ৳</span>
+            </div>
+        </div>
+
+        <section class="card p-0 overflow-hidden">
+            <table class="w-full text-left">
+                <thead class="bg-slate-800">
+                    <tr>
+                        <th class="p-4">নাম</th>
+                        <th class="p-4">দাম (কেজি)</th>
+                        <th class="p-4">স্টক</th>
+                        <th class="p-4 admin-only hidden">অ্যাকশন</th>
+                    </tr>
+                </thead>
+                <tbody id="pTableBody"></tbody>
+            </table>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <section class="card">
+                <h2 class="text-lg font-bold mb-4 text-indigo-400">কাস্টমার রিসিপ্ট</h2>
+                <input type="text" id="cName" placeholder="কাস্টমার নাম" class="input-field">
+                <textarea id="items" placeholder="আইটেম ও পরিমাণ..." class="input-field" rows="2"></textarea>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="number" id="total" placeholder="মোট বিল" class="input-field">
+                    <input type="number" id="cost" placeholder="কেনা দাম (লাভের জন্য)" class="input-field">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="number" id="paid" oninput="calcDue()" placeholder="জমা" class="input-field">
+                    <input type="number" id="due" placeholder="বাকি" class="input-field bg-slate-800" readonly>
+                </div>
+                <button onclick="genReceipt()" class="w-full bg-indigo-600 p-3 rounded-lg font-bold">রিসিপ্ট জেনারেট</button>
+            </section>
+
+            <section class="card">
+                <h2 class="text-lg font-bold mb-4 text-green-400">আজকের সেলস</h2>
+                <div id="salesList" class="space-y-2 max-h-60 overflow-y-auto"></div>
+            </section>
+        </div>
+    </main>
+
+    <div id="rModal" class="hidden fixed inset-0 bg-black/90 z-[200] flex items-center justify-center p-4">
+        <div class="bg-white text-black p-6 rounded-lg w-full max-w-xs font-mono">
+            <div id="rPrint"></div>
+            <button onclick="copyShare()" class="w-full bg-green-600 text-white p-3 mt-4 rounded-lg font-bold">হোয়াটসঅ্যাপ শেয়ার</button>
+            <button onclick="document.getElementById('rModal').classList.add('hidden')" class="w-full mt-2 text-gray-500 text-sm">বন্ধ করুন</button>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration using your credentials
+        const firebaseConfig = {
+            apiKey: "AIzaSyCMMfEd4PrQgAlYE9_3tUF-rMpLx2Qn_mg",
+            authDomain: "vaivaistore-2f113.firebaseapp.com",
+            projectId: "vaivaistore-2f113",
+            storageBucket: "vaivaistore-2f113.firebasestorage.app",
+            messagingSenderId: "880192178413",
+            appId: "1:880192178413:web:6ab46169627e47ae0524e4",
+            measurementId: "G-KZXQ2PJ7E2"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let isAdmin = localStorage.getItem('v_isAdmin') === 'true';
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
+
+        function login() {
+            if(document.getElementById('loginEmail').value === "marufhos3n@gmail.com") {
+                isAdmin = true;
+                localStorage.setItem('v_isAdmin', 'true');
+                location.reload();
+            } else { alert("ভুল ইমেইল!"); }
+        }
+
+        function logout() {
+            localStorage.setItem('v_isAdmin', 'false');
+            location.reload();
+        }
+
+        // Firebase Functions
+        async function addProduct() {
+            const name = document.getElementById('pName').value;
+            const buy = parseFloat(document.getElementById('pBuy').value);
+            const sell = parseFloat(document.getElementById('pSell').value);
+            const stock = parseFloat(document.getElementById('pStock').value);
+
+            if(name && sell) {
+                await db.collection("products").add({ name, buy, sell, stock, time: Date.now() });
+                location.reload();
+            }
+        }
+
+        function renderProducts() {
+            db.collection("products").orderBy("name").onSnapshot(snap => {
+                let html = "";
+                snap.forEach(doc => {
+                    const p = doc.data();
+                    const id = doc.id;
+                    html += `
+                        <tr class="${p.stock <= 5 ? 'low-stock' : ''} border-b border-slate-800">
+                            <td class="p-4">${p.name}</td>
+                            <td class="p-4">${p.sell} ৳</td>
+                            <td class="p-4">${p.stock} KG</td>
+                            ${isAdmin ? `<td class="p-4 admin-only text-right"><button onclick="delProd('${id}')" class="text-red-500"><i class="fas fa-trash"></i></button></td>` : ''}
+                        </tr>`;
+                });
+                document.getElementById('pTableBody').innerHTML = html;
+                if(isAdmin) document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+            });
+        }
+
+        async function delProd(id) {
+            if(confirm("মুছে ফেলতে চান?")) await db.collection("products").doc(id).delete();
+        }
+
+        function calcDue() {
+            const t = document.getElementById('total').value || 0;
+            const p = document.getElementById('paid').value || 0;
+            document.getElementById('due').value = t - p;
+        }
+
+        async function genReceipt() {
+            const cName = document.getElementById('cName').value || "কাস্টমার";
+            const itemVal = document.getElementById('items').value;
+            const total = parseFloat(document.getElementById('total').value);
+            const cost = parseFloat(document.getElementById('cost').value || 0);
+            const paid = document.getElementById('paid').value;
+            const due = document.getElementById('due').value;
+
+            if(!total) return alert("টোটাল টাকা দিন");
+
+            const profit = total - cost;
+            const dateStr = new Date().toLocaleDateString();
+
+            const text = `
+স্টোর: ভাই ভাই স্টোর 
+কাস্টমার: ${cName}
+পণ্য: ${itemVal}
+-----------------------
+টোটাল: ${total}/-
+জমা: ${paid}/-
+বাকি: ${due}/-
+-----------------------
+ধন্যবাদ! আবার আসবেন।`;
+
+            await db.collection("sales").add({ cName, total, profit, date: dateStr, time: new Date().toLocaleTimeString() });
+            
+            document.getElementById('rPrint').innerText = text;
+            document.getElementById('rModal').classList.remove('hidden');
+        }
+
+        function renderSales() {
+            const today = new Date().toLocaleDateString();
+            db.collection("sales").onSnapshot(snap => {
+                let html = "";
+                let profitSum = 0;
+                snap.forEach(doc => {
+                    const s = doc.data();
+                    if(s.date === today) {
+                        profitSum += s.profit;
+                        html += `
+                        <div class="bg-slate-800 p-2 rounded border-l-4 border-blue-500 text-sm">
+                            <div class="flex justify-between"><b>${s.cName}</b> <span>${s.total}৳</span></div>
+                            <div class="text-[10px] text-slate-400">${s.time}</div>
+                        </div>`;
+                    }
+                });
+                document.getElementById('salesList').innerHTML = html;
+                document.getElementById('dailyProfit').innerText = profitSum + " ৳";
+            });
+        }
+
+        function copyShare() {
+            const text = document.getElementById('rPrint').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+            });
+        }
+
+        // Init UI
+        if(isAdmin) {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('adminControls').classList.remove('hidden');
+            document.getElementById('userDisplay').innerText = "Admin: marufhos3n";
+        }
+        renderProducts();
+        renderSales();
+    </script>
+</body>
+</html>
