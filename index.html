@@ -1,85 +1,91 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bhai Bhai Store - Online Admin</title>
+    <title>ভাই ভাই স্টোর - অনলাইন ড্যাশবোর্ড</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;700&display=swap" rel="stylesheet">
+
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;700&display=swap');
-        body { background-color: #0f172a; color: #f8fafc; font-family: 'Hind Siliguri', sans-serif; }
-        .sidebar { transition: 0.4s; transform: translateX(100%); }
+        body { font-family: 'Hind Siliguri', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .sidebar { transition: 0.3s ease-in-out; transform: translateX(100%); }
         .sidebar.active { transform: translateX(0); }
-        .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; }
-        .input-field { background: #334155; border: 1px solid #475569; color: white; padding: 10px; border-radius: 8px; width: 100%; margin-bottom: 12px; outline: none; }
+        .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 12px; }
+        .input-field { background: #334155; border: 1px solid #475569; color: white; padding: 10px; border-radius: 8px; width: 100%; margin-bottom: 10px; outline: none; }
         .low-stock { background-color: #7f1d1d !important; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
     </style>
 </head>
 <body>
 
-    <header class="flex justify-between items-center p-5 bg-slate-900 shadow-2xl sticky top-0 z-50 border-b border-slate-800">
-        <h1 class="text-2xl font-bold text-blue-400">ভাই ভাই স্টোর <span class="text-xs bg-green-600 text-white px-2 py-1 rounded">ONLINE</span></h1>
-        <div class="flex items-center gap-4">
-            <div id="userDisplay" class="text-sm text-slate-400">Guest Mode</div>
-            <button onclick="toggleSidebar()" class="text-2xl"><i class="fas fa-bars"></i></button>
+    <header class="flex justify-between items-center p-5 bg-slate-900 border-b border-slate-800 sticky top-0 z-50 shadow-xl">
+        <div>
+            <h1 class="text-2xl font-bold text-blue-400">ভাই ভাই স্টোর</h1>
+            <p id="userStatus" class="text-[10px] text-slate-500 uppercase tracking-widest">Guest Mode</p>
         </div>
+        <button onclick="toggleSidebar()" class="text-2xl hover:text-blue-400 transition"><i class="fas fa-bars"></i></button>
     </header>
 
-    <div id="sidebar" class="sidebar fixed top-0 right-0 w-80 h-full bg-slate-900 z-[100] p-6 shadow-2xl border-l border-slate-800 overflow-y-auto">
-        <button onclick="toggleSidebar()" class="mb-8 text-slate-400"><i class="fas fa-arrow-right"></i> বন্ধ করুন</button>
+    <div id="sidebar" class="sidebar fixed top-0 right-0 w-72 h-full bg-slate-900 z-[100] p-6 shadow-2xl border-l border-slate-800 overflow-y-auto">
+        <button onclick="toggleSidebar()" class="mb-8 text-slate-400 hover:text-white"><i class="fas fa-times"></i> বন্ধ করুন</button>
         
         <div id="authSection">
             <h3 class="text-lg font-bold mb-4 text-blue-400">অ্যাডমিন লগইন</h3>
             <input type="email" id="loginEmail" placeholder="আপনার জিমেইল" class="input-field">
-            <button onclick="login()" class="w-full bg-blue-600 p-3 rounded-lg font-bold">লগইন</button>
+            <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded-lg font-bold transition">লগইন</button>
         </div>
 
         <div id="adminControls" class="hidden">
-            <h3 class="text-lg font-bold mb-4 border-b border-slate-700 pb-2">নতুন পণ্য যোগ করুন</h3>
+            <h3 class="text-lg font-bold mb-4 border-b border-slate-700 pb-2">নতুন পণ্য যোগ</h3>
             <input type="text" id="pName" placeholder="পণ্যের নাম" class="input-field">
             <input type="number" id="pBuy" placeholder="কেনা দাম (কেজি)" class="input-field">
             <input type="number" id="pSell" placeholder="বিক্রয় মূল্য (কেজি)" class="input-field">
             <input type="number" id="pStock" placeholder="স্টক পরিমাণ (কেজি)" class="input-field">
-            <button onclick="addProduct()" class="w-full bg-green-600 p-3 rounded-lg font-bold mb-4">সেভ করুন</button>
-            <button onclick="logout()" class="w-full border border-red-500 text-red-500 p-2 rounded-lg">লগআউট</button>
+            <button onclick="addProduct()" class="w-full bg-green-600 hover:bg-green-700 p-3 rounded-lg font-bold mb-4">সেভ করুন</button>
+            <button onclick="logout()" class="w-full border border-red-500 text-red-500 p-2 rounded-lg hover:bg-red-500 hover:text-white transition">লগআউট</button>
         </div>
     </div>
 
-    <main class="p-4 max-w-6xl mx-auto space-y-6">
+    <main class="p-4 max-w-5xl mx-auto space-y-6">
+        
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="md:col-span-2">
-                <input type="text" id="search" onkeyup="searchProducts()" placeholder="পণ্য খুঁজুন..." class="input-field py-3 pl-4">
+                <input type="text" id="search" onkeyup="searchProducts()" placeholder="পণ্য খুঁজুন..." class="input-field py-3 pl-4 mb-0">
             </div>
-            <div class="card flex items-center justify-between">
-                <span>আজকের লাভ:</span>
+            <div class="card p-4 flex justify-between items-center">
+                <span class="text-slate-400 text-sm">আজকের লাভ:</span>
                 <span id="dailyProfit" class="text-xl font-bold text-green-400">০ ৳</span>
             </div>
         </div>
 
-        <section class="card p-0 overflow-hidden">
-            <table class="w-full text-left">
-                <thead class="bg-slate-800">
-                    <tr>
-                        <th class="p-4">নাম</th>
-                        <th class="p-4">দাম (কেজি)</th>
-                        <th class="p-4">স্টক</th>
-                        <th class="p-4 admin-only hidden">অ্যাকশন</th>
-                    </tr>
-                </thead>
-                <tbody id="pTableBody"></tbody>
-            </table>
-        </section>
+        <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-800 text-slate-300">
+                        <tr>
+                            <th class="p-4">নাম</th>
+                            <th class="p-4">বিক্রি (কেজি)</th>
+                            <th class="p-4">স্টক</th>
+                            <th id="adminTh" class="p-4 hidden">অ্যাকশন</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pTableBody" class="divide-y divide-slate-700">
+                        </tbody>
+                </table>
+            </div>
+        </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <section class="card">
-                <h2 class="text-lg font-bold mb-4 text-indigo-400">কাস্টমার রিসিপ্ট</h2>
+            <section class="card p-5">
+                <h2 class="text-lg font-bold mb-4 text-indigo-400 border-b border-slate-700 pb-2">রিসিপ্ট জেনারেটর</h2>
                 <input type="text" id="cName" placeholder="কাস্টমার নাম" class="input-field">
-                <textarea id="items" placeholder="আইটেম ও পরিমাণ..." class="input-field" rows="2"></textarea>
+                <textarea id="items" placeholder="পণ্যের বিবরণ (উদা: আলু ৫ কেজি)" class="input-field" rows="2"></textarea>
                 <div class="grid grid-cols-2 gap-2">
                     <input type="number" id="total" placeholder="মোট বিল" class="input-field">
                     <input type="number" id="cost" placeholder="কেনা দাম (লাভের জন্য)" class="input-field">
@@ -88,34 +94,34 @@
                     <input type="number" id="paid" oninput="calcDue()" placeholder="জমা" class="input-field">
                     <input type="number" id="due" placeholder="বাকি" class="input-field bg-slate-800" readonly>
                 </div>
-                <button onclick="genReceipt()" class="w-full bg-indigo-600 p-3 rounded-lg font-bold">রিসিপ্ট জেনারেট</button>
+                <button onclick="genReceipt()" class="w-full bg-indigo-600 p-3 rounded-lg font-bold hover:bg-indigo-700 transition">রিসিপ্ট তৈরি করুন</button>
             </section>
 
-            <section class="card">
-                <h2 class="text-lg font-bold mb-4 text-green-400">আজকের সেলস</h2>
-                <div id="salesList" class="space-y-2 max-h-60 overflow-y-auto"></div>
+            <section class="card p-5">
+                <h2 class="text-lg font-bold mb-4 text-green-400 border-b border-slate-700 pb-2">আজকের বিক্রি</h2>
+                <div id="salesList" class="space-y-3 max-h-64 overflow-y-auto">
+                    </div>
             </section>
         </div>
     </main>
 
     <div id="rModal" class="hidden fixed inset-0 bg-black/90 z-[200] flex items-center justify-center p-4">
-        <div class="bg-white text-black p-6 rounded-lg w-full max-w-xs font-mono">
-            <div id="rPrint"></div>
-            <button onclick="copyShare()" class="w-full bg-green-600 text-white p-3 mt-4 rounded-lg font-bold">হোয়াটসঅ্যাপ শেয়ার</button>
-            <button onclick="document.getElementById('rModal').classList.add('hidden')" class="w-full mt-2 text-gray-500 text-sm">বন্ধ করুন</button>
+        <div class="bg-white text-black p-6 rounded-xl w-full max-w-xs font-mono text-sm shadow-2xl">
+            <div id="rPrint" class="leading-tight"></div>
+            <button onclick="copyShare()" class="w-full bg-green-600 text-white p-3 mt-4 rounded-lg font-bold uppercase"><i class="fab fa-whatsapp"></i> কপি ও শেয়ার</button>
+            <button onclick="document.getElementById('rModal').classList.add('hidden')" class="w-full mt-2 text-gray-400 text-xs">বন্ধ করুন</button>
         </div>
     </div>
 
     <script>
-        // Firebase Configuration using your credentials
+        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyCMMfEd4PrQgAlYE9_3tUF-rMpLx2Qn_mg",
             authDomain: "vaivaistore-2f113.firebaseapp.com",
             projectId: "vaivaistore-2f113",
             storageBucket: "vaivaistore-2f113.firebasestorage.app",
             messagingSenderId: "880192178413",
-            appId: "1:880192178413:web:6ab46169627e47ae0524e4",
-            measurementId: "G-KZXQ2PJ7E2"
+            appId: "1:880192178413:web:6ab46169627e47ae0524e4"
         };
 
         firebase.initializeApp(firebaseConfig);
@@ -126,11 +132,12 @@
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
 
         function login() {
-            if(document.getElementById('loginEmail').value === "marufhos3n@gmail.com") {
+            const email = document.getElementById('loginEmail').value;
+            if(email === "marufhos3n@gmail.com") {
                 isAdmin = true;
                 localStorage.setItem('v_isAdmin', 'true');
                 location.reload();
-            } else { alert("ভুল ইমেইল!"); }
+            } else { alert("অ্যাক্সেস ডিনাইড!"); }
         }
 
         function logout() {
@@ -138,15 +145,16 @@
             location.reload();
         }
 
-        // Firebase Functions
+        // Product Logic
         async function addProduct() {
             const name = document.getElementById('pName').value;
-            const buy = parseFloat(document.getElementById('pBuy').value);
-            const sell = parseFloat(document.getElementById('pSell').value);
-            const stock = parseFloat(document.getElementById('pStock').value);
+            const buy = parseFloat(document.getElementById('pBuy').value) || 0;
+            const sell = parseFloat(document.getElementById('pSell').value) || 0;
+            const stock = parseFloat(document.getElementById('pStock').value) || 0;
 
             if(name && sell) {
                 await db.collection("products").add({ name, buy, sell, stock, time: Date.now() });
+                alert("পণ্য যোগ হয়েছে!");
                 location.reload();
             }
         }
@@ -156,17 +164,15 @@
                 let html = "";
                 snap.forEach(doc => {
                     const p = doc.data();
-                    const id = doc.id;
                     html += `
-                        <tr class="${p.stock <= 5 ? 'low-stock' : ''} border-b border-slate-800">
-                            <td class="p-4">${p.name}</td>
+                        <tr class="${p.stock <= 5 ? 'low-stock' : ''}">
+                            <td class="p-4 font-bold">${p.name}</td>
                             <td class="p-4">${p.sell} ৳</td>
                             <td class="p-4">${p.stock} KG</td>
-                            ${isAdmin ? `<td class="p-4 admin-only text-right"><button onclick="delProd('${id}')" class="text-red-500"><i class="fas fa-trash"></i></button></td>` : ''}
+                            ${isAdmin ? `<td class="p-4"><button onclick="delProd('${doc.id}')" class="text-red-500"><i class="fas fa-trash"></i></button></td>` : ''}
                         </tr>`;
                 });
                 document.getElementById('pTableBody').innerHTML = html;
-                if(isAdmin) document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
             });
         }
 
@@ -174,45 +180,59 @@
             if(confirm("মুছে ফেলতে চান?")) await db.collection("products").doc(id).delete();
         }
 
+        function searchProducts() {
+            let filter = document.getElementById('search').value.toUpperCase();
+            let rows = document.getElementById('pTableBody').getElementsByTagName('tr');
+            for (let i = 0; i < rows.length; i++) {
+                let td = rows[i].getElementsByTagName('td')[0];
+                if (td) {
+                    rows[i].style.display = td.innerText.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+                }
+            }
+        }
+
+        // Sales Logic
         function calcDue() {
-            const t = document.getElementById('total').value || 0;
-            const p = document.getElementById('paid').value || 0;
+            const t = parseFloat(document.getElementById('total').value) || 0;
+            const p = parseFloat(document.getElementById('paid').value) || 0;
             document.getElementById('due').value = t - p;
         }
 
         async function genReceipt() {
             const cName = document.getElementById('cName').value || "কাস্টমার";
             const itemVal = document.getElementById('items').value;
-            const total = parseFloat(document.getElementById('total').value);
-            const cost = parseFloat(document.getElementById('cost').value || 0);
-            const paid = document.getElementById('paid').value;
-            const due = document.getElementById('due').value;
+            const total = parseFloat(document.getElementById('total').value) || 0;
+            const cost = parseFloat(document.getElementById('cost').value) || 0;
+            const paid = document.getElementById('paid').value || 0;
+            const due = document.getElementById('due').value || 0;
 
-            if(!total) return alert("টোটাল টাকা দিন");
+            if(!total) return alert("বিল এমাউন্ট দিন");
 
             const profit = total - cost;
-            const dateStr = new Date().toLocaleDateString();
+            const date = new Date().toLocaleDateString();
+            const time = new Date().toLocaleTimeString();
 
             const text = `
 স্টোর: ভাই ভাই স্টোর 
+তারিখ: ${date} | ${time}
+-----------------------
 কাস্টমার: ${cName}
 পণ্য: ${itemVal}
 -----------------------
-টোটাল: ${total}/-
-জমা: ${paid}/-
-বাকি: ${due}/-
+টোটাল বিল: ${total}/-
+জমা টাকা: ${paid}/-
+বাকি টাকা: ${due}/-
 -----------------------
 ধন্যবাদ! আবার আসবেন।`;
 
-            await db.collection("sales").add({ cName, total, profit, date: dateStr, time: new Date().toLocaleTimeString() });
-            
+            await db.collection("sales").add({ cName, total, profit, date, time, timestamp: Date.now() });
             document.getElementById('rPrint').innerText = text;
             document.getElementById('rModal').classList.remove('hidden');
         }
 
         function renderSales() {
             const today = new Date().toLocaleDateString();
-            db.collection("sales").onSnapshot(snap => {
+            db.collection("sales").orderBy("timestamp", "desc").onSnapshot(snap => {
                 let html = "";
                 let profitSum = 0;
                 snap.forEach(doc => {
@@ -220,9 +240,9 @@
                     if(s.date === today) {
                         profitSum += s.profit;
                         html += `
-                        <div class="bg-slate-800 p-2 rounded border-l-4 border-blue-500 text-sm">
-                            <div class="flex justify-between"><b>${s.cName}</b> <span>${s.total}৳</span></div>
-                            <div class="text-[10px] text-slate-400">${s.time}</div>
+                        <div class="bg-slate-800 p-3 rounded-lg border-l-4 border-indigo-500 flex justify-between">
+                            <div><p class="font-bold">${s.cName}</p><p class="text-[10px] text-slate-400">${s.time}</p></div>
+                            <div class="text-right"><p class="text-blue-400 font-bold">${s.total}৳</p><p class="text-[10px] text-green-500">লাভ: ${s.profit}৳</p></div>
                         </div>`;
                     }
                 });
@@ -242,7 +262,8 @@
         if(isAdmin) {
             document.getElementById('authSection').classList.add('hidden');
             document.getElementById('adminControls').classList.remove('hidden');
-            document.getElementById('userDisplay').innerText = "Admin: marufhos3n";
+            document.getElementById('adminTh').classList.remove('hidden');
+            document.getElementById('userStatus').innerText = "Logged in: Admin";
         }
         renderProducts();
         renderSales();
